@@ -11,7 +11,7 @@ class UserManagement extends StatefulWidget {
 class _UserManagementState extends State<UserManagement> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-late bool isAdmin=false;
+  late bool isAdmin = false;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,7 +19,9 @@ late bool isAdmin=false;
         title: const Text('Pending Users'),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore.collection('pending_users').snapshots(), // Listen for pending user requests
+        stream: _firestore
+            .collection('pending_users')
+            .snapshots(), // Listen for pending user requests
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -43,7 +45,8 @@ late bool isAdmin=false;
                     IconButton(
                       icon: const Icon(Icons.check),
                       onPressed: () {
-                        _approveUser(userRequest.id, userRequest.data() as Map<String, dynamic>);
+                        _approveUser(userRequest.id,
+                            userRequest.data() as Map<String, dynamic>);
                       },
                     ),
                     IconButton(
@@ -62,40 +65,41 @@ late bool isAdmin=false;
     );
   }
 
-  Future<void> _approveUser(String userId, Map<String, dynamic> userData) async {
+  Future<void> _approveUser(
+      String userId, Map<String, dynamic> userData) async {
     try {
-      if (userData is Map<String, dynamic>) {
-        // Add user to the 'users' collection with 'notified' field as false
-        await _firestore.collection('users').doc(userId).set({
-          'name': userData['name'],
-          'email': userData['email'],
-          'status': 'active', // Mark as active
-          'notified': 'false', // Mark as not notified
-        });
+      // Add user to the 'users' collection with 'notified' field as false
+      await _firestore.collection('users').doc(userId).set({
+        'name': userData['name'],
+        'email': userData['email'],
+        'status': 'active', // Mark as active
+        'notified': 'false', // Mark as not notified
+      });
 
-        // Remove user from 'pending_users' collection
-        await _firestore.collection('pending_users').doc(userId).delete();
+      // Remove user from 'pending_users' collection
+      await _firestore.collection('pending_users').doc(userId).delete();
 
-        if(isAdmin){
-       NotificationService.showNotification(
+      if (isAdmin) {
+        NotificationService.showNotification(
           id: 0,
           title: 'Account Approved!',
           body: 'Your account has been approved by the admin.',
         );
-        }
-
-        // Optionally, update Firestore to mark user as notified after notification
-        await _firestore.collection('users').doc(userId).update({'notified': 'false'});
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User approved and added to users collection.')),
-
-        );
-      } else {
-        throw Exception('Invalid user data format');
       }
+
+      // Optionally, update Firestore to mark user as notified after notification
+      await _firestore
+          .collection('users')
+          .doc(userId)
+          .update({'notified': 'false'});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('User approved and added to users collection.')),
+      );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to approve user: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to approve user: $e')));
     }
   }
 
@@ -109,7 +113,8 @@ late bool isAdmin=false;
           title: const Text('Rejection Reason'),
           content: TextField(
             controller: reasonController,
-            decoration: const InputDecoration(labelText: 'Enter reason for rejection'),
+            decoration:
+                const InputDecoration(labelText: 'Enter reason for rejection'),
           ),
           actions: [
             TextButton(
@@ -139,18 +144,21 @@ late bool isAdmin=false;
     try {
       // Delete the user from Firestore
       await _firestore.collection('users').doc(userId).delete();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('User deleted')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('User deleted')));
 
       // Show prompt to admin
       _showUserDeletedPrompt();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete user: $e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to delete user: $e')));
     }
   }
 
   void _showUserDeletedPrompt() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('The user account has been successfully deleted.')),
+      const SnackBar(
+          content: Text('The user account has been successfully deleted.')),
     );
   }
 }

@@ -7,7 +7,6 @@ import 'package:aug_demo/Authentication/signin.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:toastification/toastification.dart';
-import 'package:aug_demo/Augmented%20Reality/ar_homepage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +15,7 @@ Future<void> main() async {
 
   runApp(
     const ToastificationWrapper(
+      // Wrap the root widget here only
       child: MyApp(),
     ),
   );

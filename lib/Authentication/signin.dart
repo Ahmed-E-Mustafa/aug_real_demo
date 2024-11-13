@@ -13,37 +13,34 @@ class SignInScreen extends StatefulWidget {
   _SignInScreenState createState() => _SignInScreenState();
 }
 
-class _SignInScreenState extends State<SignInScreen>
-    with TickerProviderStateMixin {
+class _SignInScreenState extends State<SignInScreen> with TickerProviderStateMixin {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   late AnimationController _animationController;
   late Animation<double> _fadeInAnimation;
   late Animation<Offset> _slideAnimation;
 
-  bool _isLoading = false;
-  String? _emailError;
-  String? _passwordError;
-  String? _confirmPasswordError;
+  bool _isLoading = false; // Loading state for shimmer effect
 
   @override
   void initState() {
     super.initState();
 
+    // Initialize the AnimationController
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
     );
 
+    // Fade-in animation for the entire screen
     _fadeInAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
     );
 
+    // Slide-up animation for the login form
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0, 1),
       end: Offset.zero,
@@ -52,6 +49,7 @@ class _SignInScreenState extends State<SignInScreen>
       curve: Curves.easeInOut,
     ));
 
+    // Start the animation
     _animationController.forward();
   }
 
@@ -59,115 +57,49 @@ class _SignInScreenState extends State<SignInScreen>
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
-  void _validateInputs() {
-    setState(() {
-      _emailError =
-          _emailController.text.isEmpty || !_emailController.text.contains('@')
-              ? 'Please enter a valid email address.'
-              : null;
-
-      _passwordError = _passwordController.text.length < 10 ||
-              !RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{10,}$')
-                  .hasMatch(_passwordController.text)
-          ? 'Password must have 1 uppercase, 1 lowercase, 1 number, 1 special character, and 10+ characters.'
-          : null;
-
-      _confirmPasswordError =
-          _passwordController.text != _confirmPasswordController.text
-              ? 'Passwords do not match.'
-              : null;
-    });
-  }
-
   void _signIn() async {
-    _validateInputs();
+    setState(() {
+      _isLoading = true; // Show shimmer when sign-in starts
+    });
 
-    if (_emailError == null &&
-        _passwordError == null &&
-        _confirmPasswordError == null) {
-      setState(() => _isLoading = true);
+    String email = _emailController.text;
+    String password = _passwordController.text;
 
-      try {
-        UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-          email: _emailController.text,
-          password: _passwordController.text,
-        );
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-        bool isAdmin = (_emailController.text == "admin@gmail.com" &&
-            _passwordController.text == "123456");
-        bool isSuperAdmin = (_emailController.text == "superadmin@gmail.com" &&
-            _passwordController.text == "123456");
+      bool isAdmin = (email == "admin@gmail.com" && password == "123456");
+      bool isSuperAdmin = (email == "superadmin@gmail.com" && password == "123456");
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => Dashboard(
-              isAdmin: isAdmin,
-              iSuperAdmin: isSuperAdmin,
-            ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Dashboard(
+            isAdmin: isAdmin,
+            iSuperAdmin: isSuperAdmin,
           ),
-        );
-      } on FirebaseAuthException catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.code == 'user-not-found'
-              ? 'No user found for that email.'
-              : e.code == 'wrong-password'
-                  ? 'Wrong password provided.'
-                  : 'An error occurred. Please try again.'),
-        ));
-      } finally {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    required String? errorText,
-    bool isPassword = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: label,
-            filled: true,
-            fillColor: Colors.white,
-            prefixIcon: Icon(icon, color: Colors.blueAccent),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.grey, width: 1),
-            ),
-          ),
-          obscureText: isPassword,
         ),
-        if (errorText != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 5),
-            child: Text(
-              errorText,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
-            ),
-          ),
-      ],
-    );
+      );
+    } on FirebaseAuthException catch (e) {
+      String message = 'An error occurred. Please try again.';
+      if (e.code == 'user-not-found') {
+        message = 'No user found for that email.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong password provided.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    } finally {
+      setState(() {
+        _isLoading = false; // Hide shimmer after sign-in attempt is complete
+      });
+    }
   }
 
   @override
@@ -212,45 +144,83 @@ class _SignInScreenState extends State<SignInScreen>
                           ),
                         ),
                         const SizedBox(height: 20),
-                        _isLoading
-                            ? Shimmer.fromColors(
-                                baseColor: Colors.grey[300]!,
-                                highlightColor: Colors.grey[100]!,
-                                child: Container(
-                                  height: 55,
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              )
-                            : Column(
-                                children: [
-                                  _buildTextField(
-                                    controller: _emailController,
-                                    label: 'Email',
-                                    icon: Icons.email,
-                                    errorText: _emailError,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _buildTextField(
-                                    controller: _passwordController,
-                                    label: 'Password',
-                                    icon: Icons.lock,
-                                    errorText: _passwordError,
-                                    isPassword: true,
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _buildTextField(
-                                    controller: _confirmPasswordController,
-                                    label: 'Confirm Password',
-                                    icon: Icons.lock,
-                                    errorText: _confirmPasswordError,
-                                    isPassword: true,
-                                  ),
-                                ],
-                              ),
+                       _isLoading
+    ? Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Container(
+          height: 55, // Adjust height to match the text field height
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+          ),
+        ),
+      )
+    : TextField(
+        controller: _emailController,
+        decoration: InputDecoration(
+          labelText: 'Email',
+          labelStyle: const TextStyle(color: Colors.blueAccent),
+          filled: true,
+          fillColor: Colors.white,
+          prefixIcon: Icon(Icons.email, color: Colors.blueAccent),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.grey, width: 1),
+          ),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+        ),
+      ),
+SizedBox(height: 15),
+_isLoading
+    ? Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: Container(
+          height: 55, // Adjust height to match the text field height
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.white,
+          ),
+        ),
+      )
+    : TextField(
+        controller: _passwordController,
+        decoration: InputDecoration(
+          labelText: 'Password',
+          labelStyle: const TextStyle(color: Colors.blueAccent),
+          filled: true,
+          fillColor: Colors.white,
+          prefixIcon: Icon(Icons.lock, color: Colors.blueAccent),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.grey, width: 1),
+          ),
+          floatingLabelBehavior: FloatingLabelBehavior.auto,
+          contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+        ),
+        obscureText: true,
+      ),
+
                         const SizedBox(height: 20),
                         SizedBox(
                           width: double.infinity,
@@ -273,9 +243,7 @@ class _SignInScreenState extends State<SignInScreen>
                           onPressed: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ForgotPasswordScreen()),
+                              MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
                             );
                           },
                           child: const Text(
@@ -298,9 +266,7 @@ class _SignInScreenState extends State<SignInScreen>
                               onPressed: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const SignUpScreen()),
+                                  MaterialPageRoute(builder: (context) => const SignUpScreen()),
                                 );
                               },
                               child: const Text(

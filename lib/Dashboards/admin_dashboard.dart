@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'package:aug_demo/User%20Management/User_Management.dart';
-import 'package:aug_demo/User%20Management/ViewUser.dart';
 import 'package:aug_demo/Notification/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,7 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminDashboard extends StatelessWidget {
   final bool isAdmin, iSuperAdmin;
-  const AdminDashboard({super.key, required this.isAdmin, required this.iSuperAdmin});
+  const AdminDashboard(
+      {super.key, required this.isAdmin, required this.iSuperAdmin});
 
   // Function to upload the model to Firebase Storage and save model data to Firestore
   Future<void> _uploadModel(BuildContext context) async {
@@ -23,7 +22,9 @@ class AdminDashboard extends StatelessWidget {
       if (file.path != null) {
         try {
           // Upload file to Firebase Storage
-          final storageRef = FirebaseStorage.instance.ref().child('pending_models/${file.name}');
+          final storageRef = FirebaseStorage.instance
+              .ref()
+              .child('pending_models/${file.name}');
           final uploadTask = await storageRef.putFile(File(file.path!));
           final downloadUrl = await storageRef.getDownloadURL();
 
@@ -38,7 +39,9 @@ class AdminDashboard extends StatelessWidget {
           };
 
           // Save model data to Firestore
-          final modelRef = await FirebaseFirestore.instance.collection('models').add(modelData);
+          final modelRef = await FirebaseFirestore.instance
+              .collection('models')
+              .add(modelData);
 
           // Notify Super Admin about the new model
           NotificationService.showNotification(
@@ -52,7 +55,6 @@ class AdminDashboard extends StatelessWidget {
 
           // Show success dialog
           _showSuccessDialog(context, downloadUrl);
-
         } catch (e) {
           print("Error during upload: $e");
           _showErrorDialog(context);
@@ -92,7 +94,8 @@ class AdminDashboard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Error'),
-        content: const Text('An error occurred during the file upload. Please try again.'),
+        content: const Text(
+            'An error occurred during the file upload. Please try again.'),
         actions: [
           TextButton(
             onPressed: () {
@@ -109,7 +112,10 @@ class AdminDashboard extends StatelessWidget {
   Future<void> _submitUserInfo(String name, String email) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await FirebaseFirestore.instance.collection('pending_users').doc(user.uid).set({
+      await FirebaseFirestore.instance
+          .collection('pending_users')
+          .doc(user.uid)
+          .set({
         'name': name,
         'email': email,
         'status': 'pending',
@@ -136,12 +142,14 @@ class AdminDashboard extends StatelessWidget {
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(labelText: 'Name'),
-                  validator: (value) => value?.isEmpty ?? true ? 'Enter your name' : null,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Enter your name' : null,
                 ),
                 TextFormField(
                   controller: _emailController,
                   decoration: const InputDecoration(labelText: 'Email'),
-                  validator: (value) => value?.isEmpty ?? true ? 'Enter your email' : null,
+                  validator: (value) =>
+                      value?.isEmpty ?? true ? 'Enter your email' : null,
                 ),
               ],
             ),
@@ -168,28 +176,30 @@ class AdminDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: iSuperAdmin && isAdmin ? null : AppBar(
-        centerTitle: true,
-        title: const Text('Admin Dashboard'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (value) async {
-              if (value == 'logout') {
-                await FirebaseAuth.instance.signOut();
-                Navigator.pushReplacementNamed(context, '/');
-              } else {
-                print('error');
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'logout',
-                child: Text('Logout'),
-              ),
-            ],
-          ),
-        ],
-      ),
+      appBar: iSuperAdmin && isAdmin
+          ? null
+          : AppBar(
+              centerTitle: true,
+              title: const Text('Admin Dashboard'),
+              actions: [
+                PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'logout') {
+                      await FirebaseAuth.instance.signOut();
+                      Navigator.pushReplacementNamed(context, '/');
+                    } else {
+                      print('error');
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'logout',
+                      child: Text('Logout'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -216,7 +226,8 @@ class AdminDashboard extends StatelessWidget {
             const SizedBox(height: 20),
             if (isAdmin)
               ElevatedButton(
-                onPressed: () => Navigator.pushNamed(context, '/super_admin_dashboard'),
+                onPressed: () =>
+                    Navigator.pushNamed(context, '/super_admin_dashboard'),
                 child: const Text('View Super Admin Dashboard'),
               ),
             const SizedBox(height: 20),
